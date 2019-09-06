@@ -1,30 +1,44 @@
-// Required packages
-var gulp = require('gulp');
-var browserSync = require('browser-sync').create();
-var gulpSass = require('gulp-sass');
+// Required modules
+const { dest, parallel, series, src, watch } = require('gulp');
+const sass = require('gulp-sass');
+const browsersync = require('browser-sync').create();
 
 // Server Variables
-var scssDir = 'scss/';
-var publicDir = 'public/';
-var cssDir = publicDir + 'css/';
+const srcDir = 'src/';
+const scssDir = srcDir + 'scss/';
+const publicDir = 'public/';
+const cssDir = publicDir + 'css/';
+
+// Start server
+function serve(done) {
+  browsersync.init({
+    server: {
+      baseDir: publicDir
+    },
+    port: 3000
+  });
+  done();
+}
+
+// Reload Browser
+function reload(done) {
+  browsersync.reload();
+  done();
+}
 
 // Compile Sass
-gulp.task('compileSass', function () {
-  return gulp.src([scssDir + 'main.scss'])
-    .pipe(gulpSass({outputStyle: 'expanded'}).on('error', gulpSass.logError))
-    .pipe(gulp.dest(cssDir))
-    .pipe(browserSync.stream());
-});
+function compileSass() {
+  return src(scssDir + '**/*.scss')
+    .pipe(sass({ outputStyle: 'expanded' }).on('error', sass.logError))
+    .pipe(dest(cssDir))
+    .pipe(browsersync.stream());
+}
 
-// Watch & Serve
-gulp.task('serve', ['compileSass'], function () {
-  browserSync.init({
-    server: publicDir
-  });
-
-  gulp.watch([scssDir + '**/*.scss'], ['compileSass']);
-  gulp.watch([publicDir + '**/*.html']).on('change', browserSync.reload);
-});
+// Watch Files
+function watchFiles() {
+  watch(scssDir + '**/*.scss', compileSass);
+  watch(publicDir + '**/*.html', reload);
+}
 
 // Default Task
-gulp.task('default', ['serve']);
+exports.default = series(parallel(serve, compileSass, watchFiles));
